@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overscroll Detection Demo</title>
+    <style>
+        /* ======== General Reset ======== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            overscroll-behavior-y: auto;
+            overflow-x: hidden;
+            font-family: "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0f0f 0%, #1a2a2a 100%);
+            color: #c9f8d6;
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        /* ======== Demo Content ======== */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            color: #00ffb2;
+        }
+
+        .demo-info {
+            background: rgba(0, 255, 178, 0.1);
+            border: 1px solid rgba(0, 255, 178, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .demo-info p {
+            margin-bottom: 0.5rem;
+        }
+
+        .content-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            min-height: 300px;
+        }
+
+        .content-section h2 {
+            color: #00ffb2;
+            margin-bottom: 1rem;
+        }
+
+        .spacer {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 255, 178, 0.05);
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        /* ======== Overscroll Message ======== */
+        .overscroll-message {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(0);
+            padding: 0.75rem 1.5rem;
+            border-radius: 2rem;
+            font-size: 0.95rem;
+            font-weight: 500;
+            z-index: 9999;
+            pointer-events: none;
+            backdrop-filter: blur(12px);
+            background: rgba(10, 15, 15, 0.85);
+            color: #c9f8d6;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .overscroll-message.show {
+            opacity: 1;
+            animation: slideUpFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .overscroll-message.hide {
+            animation: slideDownFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUpFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(1rem);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        @keyframes slideDownFadeOut {
+            0% {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) translateY(1rem);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Overscroll Detection Demo</h1>
+        
+        <div class="demo-info">
+            <p><strong>Instructions:</strong></p>
+            <p>Scroll down to the bottom of this page and try to scroll further.</p>
+            <p>You'll see a message appear for 0.7 seconds, then the page will snap back.</p>
+        </div>
+
+        <div class="content-section">
+            <h2>Section 1</h2>
+            <p>This is a demo page to demonstrate overscroll detection. Scroll down to see more content and test the overscroll functionality.</p>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </div>
+
+        <div class="spacer">
+            Keep scrolling down...
+        </div>
+
+        <div class="content-section">
+            <h2>Section 2</h2>
+            <p>More content to fill the page. The overscroll detection will trigger when you reach the bottom and try to scroll further.</p>
+            <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        </div>
+
+        <div class="spacer">
+            Almost there...
+        </div>
+
+        <div class="content-section">
+            <h2>Section 3</h2>
+            <p>This is near the bottom of the page. Try scrolling down past this point to see the overscroll message appear.</p>
+            <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+        </div>
+
+        <div class="spacer">
+            This is the end! Scroll down to trigger overscroll detection.
+        </div>
+    </div>
+
+    <!-- Overscroll Message Element -->
+    <div id="overscrollMessage" class="overscroll-message">
+        You've reached the end!
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // Get the overscroll message element
+            const overscrollMessage = document.getElementById('overscrollMessage');
+            
+            // State variables
+            let messageTimeout = null;
+            let snapTimeout = null;
+            let messageShowing = false;
+            let isSnappingBack = false;
+
+            /**
+             * Show the overscroll message
+             */
+            function showMessage() {
+                if (!messageShowing) {
+                    messageShowing = true;
+                    overscrollMessage.classList.remove('hide');
+                    overscrollMessage.classList.add('show');
+                }
+            }
+
+            /**
+             * Hide the overscroll message
+             */
+            function hideMessage() {
+                messageShowing = false;
+                overscrollMessage.classList.remove('show');
+                overscrollMessage.classList.add('hide');
+                // Remove hide class after animation completes
+                setTimeout(() => {
+                    overscrollMessage.classList.remove('hide');
+                }, 200);
+            }
+
+            /**
+             * Snap back to normal scroll limit
+             */
+            function snapBack() {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                const maxScroll = Math.max(0, scrollHeight - clientHeight);
+
+                isSnappingBack = true;
+
+                // Snap back to max scroll position
+                document.documentElement.scrollTop = maxScroll;
+                document.body.scrollTop = maxScroll; // For older browsers
+                
+                window.scrollTo({
+                    top: maxScroll,
+                    behavior: 'smooth'
+                });
+
+                // Allow handling scroll events again after snap completes
+                setTimeout(() => {
+                    isSnappingBack = false;
+                }, 400);
+            }
+
+            /**
+             * Handle scroll event to detect overscroll
+             */
+            function handleScroll() {
+                // Prevent handling during snap-back
+                if (isSnappingBack) {
+                    return;
+                }
+
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollHeight = document.documentElement.scrollHeight;
+                const clientHeight = document.documentElement.clientHeight;
+                const maxScroll = Math.max(0, scrollHeight - clientHeight);
+
+                // Detect overscroll: when scrolled past the bottom
+                // Add small threshold for better detection
+                if (scrollTop > maxScroll + 1 && maxScroll >= 0) {
+                    // Show message
+                    showMessage();
+                    
+                    // Clear any existing timeouts
+                    if (messageTimeout) clearTimeout(messageTimeout);
+                    if (snapTimeout) clearTimeout(snapTimeout);
+
+                    // Hide message after 0.7 seconds
+                    messageTimeout = setTimeout(() => {
+                        hideMessage();
+                    }, 700);
+
+                    // Snap back to normal scroll limit after 0.7 seconds
+                    snapTimeout = setTimeout(() => {
+                        snapBack();
+                    }, 700);
+                } else if (scrollTop <= maxScroll && messageShowing) {
+                    // If we're back within normal scroll, hide message
+                    hideMessage();
+                    if (messageTimeout) clearTimeout(messageTimeout);
+                    if (snapTimeout) clearTimeout(snapTimeout);
+                }
+            }
+
+            // Event listeners
+            window.addEventListener("scroll", handleScroll, { passive: true });
+            window.addEventListener("wheel", handleScroll, { passive: true });
+            window.addEventListener("touchend", handleScroll, { passive: true });
+
+            // Cleanup function (not strictly necessary for standalone HTML, but good practice)
+            window.addEventListener("beforeunload", function() {
+                if (messageTimeout) clearTimeout(messageTimeout);
+                if (snapTimeout) clearTimeout(snapTimeout);
+            });
+        })();
+    </script>
+</body>
+</html>
